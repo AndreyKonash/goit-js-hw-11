@@ -13,57 +13,99 @@ body {
   background-color: rgb(250, 238, 231);
 }
 
-#search-box {
+#search-form {
   font: inherit;
-  padding: 8px;
-  width: 320px;
-  margin-bottom: 20px;
-  margin-top: 20px;
-  margin-left: 20px;
-  background-color: rgb(237, 225, 215);
-}
-
-ul {
-  padding: 10;
-  list-style: none;
-}
-
-li {
-  margin-bottom: 20px;
-  margin-left: 20px;
+  padding: 10px;
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 15px;
+  background-color: #2546b1;
+  position: fixed;
+  width: 100%;
+  z-index: 100;
+}
+
+input {
+  font-size: 20px;
+  padding: 8px;
+  border-color: transparent;
+  border-radius: inherit;
+}
+
+.search-form button {
+  font-size: 17px;
+  padding: 10px;
+  border-color: transparent;
+  border: 0px;
+  background-color: rgb(240, 240, 240);
+  cursor: pointer;
+}
+
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 100px;
+  padding-bottom: 40px;
+}
+
+.wrapper-loadmore {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 40px;
+}
+
+.load-more {
+  font-size: 18px;
+  color: rgb(51, 60, 68);
+  padding: 8px;
+  border-color: transparent;
+  background-color: #bcc6cd;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.photo-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 30px;
+  margin-bottom: 30px;
+  width: calc((100% / 4) - 30px);
 }
 
 img {
-  display: block;
-  width: 70px;
+  /* display: block; */
+  width: 100%;
   height: auto;
-  border: 0.5px solid grey;
 }
 
-h1 {
-  font-size: 15px;
-  color: ffffff;
-  margin: 0;
-  padding: 0;
+.info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+}
+
+.info-item {
+  text-align: center;
+  font-size: 10px;
 }
 
 p {
-  margin-top: 10px;
-  margin-bottom: 0px;
-  margin-left: 20px;
-  font-size: 30px;
+  display: flex;
+  flex-direction: column;
 }
 
-.one_country img {
-  display: block;
-  width: 200px;
-  height: 100px;
-  border: 0.5px solid gray;
-}
-
-.one_country h1 {
-  font-size: 45px;
+.visually-hidden {
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  margin: -1px;
 }

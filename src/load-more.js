@@ -3,7 +3,7 @@ import PixabayAPIService from './fetch_foto';
 import { Notify } from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import easyScroll from 'easy-scroll';
+import infiniteScroll from 'infinite-scroll';
 
 const pixabayAPIService = new PixabayAPIService();
 
@@ -11,78 +11,28 @@ const OPTIONS_NOTIFICATION = {
   timeout: 5000,
   fontSize: '14px',
 };
-
-let timerNotifyEndPhotos = 1;
-let timerNotifyErrorFetch = 1;
-let timerNotifyCountPhotos = 1;
-
 const refs = {
   formEl: document.querySelector('#search-form'),
+  loadMoreBtn: document.querySelector('.load-more'),
   galleryContainer: document.querySelector('.gallery'),
-  pointOfInfiniteScroll: document.querySelector('.point-infinite-scroll'),
+  photoEl: document.querySelector('a'),
 };
+let timerID;
 
 refs.formEl.addEventListener('submit', onSubmit);
+refs.loadMoreBtn.addEventListener('click', onLoadMorePhotos);
+refs.loadMoreBtn.classList.add('visually-hidden');
 
-const simpleLightBox = new SimpleLightbox('.gallery a', {
-  captionsData: 'alt',
-  captionDelay: 250,
-  scrollZoom: false,
-});
+/** functions */
 
-easyScroll({
-  scrollableDomEle: window,
-  duration: 2000,
-  easingPreset: 'easeInQuad',
-  scrollAmount: 1000,
-});
-
-
-
-const optionsScroll = {
-  rootMargin: '200px',
-};
-
-const onLoadMore = entries => {
-  entries.forEach(async entry => {
-    if (
-      entry.isIntersecting &&
-      pixabayAPIService.query !== '' &&
-      pixabayAPIService.lengthArrayPhotos >= pixabayAPIService.perPage
-    ) {
-      pixabayAPIService.incrementPages();
-      try {
-        await pixabayAPIService.onFetchPhotos().then(onLoadPhotos);
-        timerNotifyEndPhotos = 1;
-      } catch (error) {
-        reachedEndSearch();
-      }
-    } else if (
-      pixabayAPIService.lengthArrayPhotos < pixabayAPIService.perPage &&
-      timerNotifyEndPhotos === 1
-    ) {
-      reachedEndSearch();
-      timerNotifyEndPhotos = 2;
-      return;
-    }
-  });
-};
-
-const observer = new IntersectionObserver(onLoadMore, optionsScroll);
-observer.observe(refs.pointOfInfiniteScroll);
-
-
-
-async function onSubmit(evt) {
+function onSubmit(evt) {
   evt.preventDefault();
-  pixabayAPIService.query = '';
-  timerNotifyErrorFetch = 1;
-  timerNotifyCountPhotos = 1;
   refs.galleryContainer.innerHTML = '';
+  refs.loadMoreBtn.classList.add('visually-hidden');
 
   const formData = new FormData(evt.target);
   const searchQuery = formData.get('searchQuery').trim();
-
+  // const searchQuery = evt.currentTarget.elements.searchQuery.value.trim();
   refs.formEl.reset();
 
   if (!searchQuery || searchQuery.length < 3) {
@@ -95,32 +45,55 @@ async function onSubmit(evt) {
 
   pixabayAPIService.setNewQuery = searchQuery;
   pixabayAPIService.resetPage();
-  await pixabayAPIService.onFetchPhotos().then(onLoadPhotos).catch(onError);
+  pixabayAPIService.onFetchPhotos().then(onLoadFirstPhotos).catch(onError);
 }
 
-function onLoadPhotos(response) {
-  const totalphotos = response.data.totalphotos;
+function onLoadFirstPhotos(response) {
+  clearTimeout(timerID);
+  const totalHits = response.data.totalHits;
 
-  if (totalphotos === 0 && timerNotifyErrorFetch === 1) {
+  if (totalHits === 0) {
     Notify.failure(
       'Sorry, there are no images matching your search query. Please try again',
       OPTIONS_NOTIFICATION
     );
-    timerNotifyErrorFetch = 2;
     return;
   }
 
-  if (totalphotos !== 0 && timerNotifyCountPhotos === 1) {
-    Notify.success(
-      `Hooray! We found ${totalphotos} images`,
-      OPTIONS_NOTIFICATION
-    );
-    timerNotifyCountPhotos = 2;
-  }
+  Notify.success(`Hooray! We found ${totalHits} images`, OPTIONS_NOTIFICATION);
 
   const photos = response.data.hits;
   onMarkupPhotos(photos);
-  simpleLightBox.refresh();
+  onSimpleLightBox();
+
+  if (totalHits <= pixabayAPIService.perPage) {
+    timerID = setTimeout(() => {
+      reachedEndSearch();
+    }, 4100);
+    return;
+  }
+  refs.loadMoreBtn.classList.remove('visually-hidden');
+}
+
+function onLoadMorePhotos() {
+  pixabayAPIService.incrementPages();
+
+  pixabayAPIService
+    .onFetchPhotos()
+    .then(response => {
+      const photos = response.data.hits;
+      onMarkupPhotos(photos);
+      onSimpleLightBox();
+
+      let restOfPhotos =
+        response.data.totalHits -
+        pixabayAPIService.page * pixabayAPIService.perPage;
+      if (restOfPhotos <= 0) {
+        reachedEndSearch();
+        return;
+      }
+    })
+    .catch(onError);
 }
 
 function onMarkupPhotos(photos) {
@@ -178,16 +151,25 @@ function onError(error) {
       OPTIONS_NOTIFICATION
     );
   }
+  Notify.failure(`${error.config}. Try again`, OPTIONS_NOTIFICATION);
 }
 
 function reachedEndSearch() {
   Notify.warning(
-    `We're sorry, but you've reached the end of search "${pixabayAPIService.getCurrentQuery.toUpperCase()}". Please start a new search`,
+    `We're sorry, but you've reached the end of search ${pixabayAPIService.getCurrentQuery.toUpperCase()}. Please start a new search`,
     {
       timeout: 5000,
       position: 'center-center',
-      fontSize: '20px',
+      fontSize: '18px',
       width: '300px',
     }
   );
+  refs.loadMoreBtn.classList.add('visually-hidden');
+}
+
+function onSimpleLightBox() {
+  new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionDelay: 250,
+  });
 }
